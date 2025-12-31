@@ -4,29 +4,23 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockBlogs } from '@/lib/mockData';
 import React from 'react';
 import { useBlogList } from "@/services/blog/BlogQueris";
-import {  useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteBlog } from "@/services/blog/BlogServices";
-interface Blog {
-  id: string;
-  title: string;
-  author: string;
-  publishDate: string;
-  category: string;
-  isFeatured: boolean;
-  subtitle: string;
-  status: string;
-  content: string;
-}
+import { Blog } from "../../types/Blog";
 export default function BlogListPage() {
 
-  const { data: blogListDatas, isLoading, error} = useBlogList({});
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [perPage, setPerPage] = useState(10);
   const queryClient = useQueryClient();
+  const { data: blogListDatas, isLoading, error } = useBlogList(currentPage);
+
 
   useEffect(() => {
     // setBlogs(mockBlogs);
@@ -34,29 +28,35 @@ export default function BlogListPage() {
 
   }, []);
   const removeBlogMutation = useMutation({
-    mutationFn: (id:string) => deleteBlog(id),
+    mutationFn: (id: string) => deleteBlog(id),
 
     onSuccess: (data) => {
-      console.log("blog deleted successfully:", data);
       alert("Blog deleted successfully");
       queryClient.invalidateQueries({ queryKey: ['bloglist'] });
     },
     onError: (error) => {
-      console.error("Error  while loggin:", error);
+      console.error("Error  while deletion:", error);
     },
   });
-  useEffect(()=>{
-    if(blogListDatas && !isLoading && !error) {
-     // setBlogs(blogListDatas);
-     setBlogs(blogListDatas.data)
-     console.log("blogListDatas",blogListDatas);
+  useEffect(() => {
+    if (blogListDatas && !isLoading && !error) {
+      // setBlogs(blogListDatas);
+      setBlogs(blogListDatas.data);
+      setCurrentPage(blogListDatas.meta.current_page);
+      setTotalPages(blogListDatas.meta.last_page);
+      setTotal(blogListDatas.meta.total);
+      setPerPage(blogListDatas.meta.per_page);
     }
-    console.log("blogListDatas",blogListDatas);
 
 
-  },[blogListDatas,isLoading,error])
+  }, [blogListDatas, isLoading, error])
+  useEffect(() => {
+    if (currentPage) {
+      queryClient.invalidateQueries({ queryKey: ['bloglist'] });
 
-  if (loading) {
+    }
+  }, [currentPage]);
+  if (isLoading) {
     return (
       <div className="contain-auto py-6 px-2 sm:px-4 spx-w-2xl">
         {[...Array(3)].map((_, i) => (
@@ -69,9 +69,9 @@ export default function BlogListPage() {
       </div>
     );
   }
-const handleDelete =(id:string)=>{
-  removeBlogMutation.mutate(id);
-}
+  const handleDelete = (id: string) => {
+    removeBlogMutation.mutate(id);
+  }
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -102,7 +102,7 @@ const handleDelete =(id:string)=>{
                     <span className="mx-2">|</span>
                     <span>Category: {blog.category}</span>
                     <span className="mx-2">|</span>
-                    <span>Status: {blog.status}</span>
+                    <span>Status: {blog.status == "published" ? "Published" : "Unpublished"}</span>
                     {blog.isFeatured && <span className="ml-2 px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">Featured</span>}
                   </div>
                 </div>
@@ -112,9 +112,32 @@ const handleDelete =(id:string)=>{
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDelete(blog.id)}>Delete</Button>
                 </div>
+
               </CardHeader>
             </Card>
           ))}
+          <div className="flex items-center gap-4 mt-4">
+            <button
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="flex items-center px-3 py-1 bg-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed hover:bg-gray-300 transition rounded-md"
+            >
+              ← 
+            </button>
+
+            <span className="font-semibold">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="flex items-center px-3 py-1 bg-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed hover:bg-gray-300 transition rounded-md"
+            >
+               →
+            </button>
+          </div>
+
         </div>
       )}
     </div>

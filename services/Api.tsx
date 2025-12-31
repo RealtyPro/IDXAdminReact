@@ -1,13 +1,17 @@
 import axios, { AxiosInstance } from 'axios';
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: 'http://127.0.0.1:8001/api', // Set your base URL here
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ,
 });
 
 // Request interceptor to add headers
 axiosInstance.interceptors.request.use(
   (config) => {
     // You can modify headers here if needed
+    const token = sessionStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -33,6 +37,8 @@ axiosInstance.interceptors.response.use(
         break;
       case 401:
         console.error('Unauthorized:', message);
+        window.location.href='/login'; // Redirect to login page
+        sessionStorage.removeItem('token'); // Clear token
         break;
       case 403:
         console.error('Forbidden:', message);

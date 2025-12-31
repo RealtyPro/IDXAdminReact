@@ -5,7 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
+import { useMutation } from '@tanstack/react-query';
+import { login } from '@/services/auth/AuthService';
+interface loginResponse {
+  email: string;
+  password: string;
+}
 export default function Login() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -17,6 +22,20 @@ export default function Login() {
     password: '',
   });
 
+  const loginMutation = useMutation({
+    mutationFn: (user: loginResponse) => login(user),
+
+    onSuccess: (data) => {
+      console.log("authenticated successfully:", data.access_token);
+      sessionStorage.setItem('token', data.access_token);
+
+      window.location.href = "/admin/blog";
+
+    },
+    onError: (error) => {
+      console.error("Error  while login:", error);
+    },
+  });
   const validateForm = () => {
     let isValid = true;
     const newErrors = { email: '', password: '' };
@@ -38,10 +57,16 @@ export default function Login() {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       // Handle login logic here
+      loginMutation.mutate(formData);
+
+      // /   / const response =await login(formData);
+      //     if (response.status === 200) {
+      //       console.log('Login successful',response.data);
+      //     }
       console.log('Form submitted:', formData);
     }
   };
@@ -80,7 +105,7 @@ export default function Login() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-dark">
-                Email address
+                Email address 
               </label>
               <input
                 id="email"
@@ -90,9 +115,8 @@ export default function Login() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.email ? 'border-red-500' : 'border-border'
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+                className={`mt-1 block w-full rounded-lg border ${errors.email ? 'border-red-500' : 'border-border'
+                  } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-500">{errors.email}</p>
@@ -111,9 +135,8 @@ export default function Login() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.password ? 'border-red-500' : 'border-border'
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+                className={`mt-1 block w-full rounded-lg border ${errors.password ? 'border-red-500' : 'border-border'
+                  } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
               />
               {errors.password && (
                 <p className="mt-1 text-sm text-red-500">{errors.password}</p>

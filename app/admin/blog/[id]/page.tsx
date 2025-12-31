@@ -5,17 +5,21 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockBlogs } from '@/lib/mockData';
 import React from 'react';
+import { useSingleBlog } from "@/services/blog/BlogQueris";
+import { Blog } from "@/app/types/Blog";
 
 export default function BlogDetailsPage() {
-  const [blog, setBlog] = useState<typeof mockBlogs[0] | undefined>(undefined);
+  
+  const [blog, setBlog] = useState<Blog | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const params = useParams();
+  const { data : blogData, isLoading, error } = useSingleBlog(params.id as string);
   useEffect(() => {
-    setBlog(mockBlogs.find((b) => b.id === params.id));
-    setLoading(false);
-  }, [params.id]);
+    if(blogData?.data)
+    setBlog(blogData.data);
+    setLoading(isLoading);
+  }, [blogData,isLoading]);
 
   if (loading) {
     return (
@@ -68,7 +72,8 @@ export default function BlogDetailsPage() {
         <CardContent className="pt-4">
           <div className="prose max-w-none">
             <div>
-              <Label htmlFor="category">Category</Label>
+              <label htmlFor="category">Category</label>
+              {/* {JSON.stringify(blog.data)} */}
               <select
                 id="category"
                 value={blog.category || ""}

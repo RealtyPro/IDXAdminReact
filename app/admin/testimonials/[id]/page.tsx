@@ -7,15 +7,26 @@ import { mockTestimonials } from '@/lib/mockData';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSingleTestimonials } from '@/services/testimonials/TestimonialsQueris';
 
 export default function TestimonialDetailsPage() {
   const [testimonial, setTestimonial] = useState<typeof mockTestimonials[0] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const params = useParams();
+  const {data: singleTestimonial, isLoading, error} = useSingleTestimonials(params.id as string);
   useEffect(() => {
-    setTestimonial(mockTestimonials.find((t) => t.id === params.id));
-    setLoading(false);
-  }, [params.id]);
+    if (!isLoading && !error && singleTestimonial) {
+      setTestimonial(singleTestimonial.data);
+      
+    } else {
+      setTestimonial(undefined);
+    }
+    setLoading(isLoading);
+    
+    // Simulate loading delay
+    const timer = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(timer); 
+  }, [singleTestimonial?.data, isLoading, error]);
 
   if (loading) {
     return (

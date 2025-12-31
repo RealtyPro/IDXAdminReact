@@ -23,14 +23,14 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: HomeIcon },
   { name: 'Listings', href: '/admin/listings', icon: DocumentTextIcon },
-  { name: 'Agents', href: '/admin/agents', icon: UsersIcon },
+  // { name: 'Agents', href: '/admin/agents', icon: UsersIcon },
   { name: 'Users', href: '/admin/users', icon: UsersIcon },
-  { name: 'Inquiries', href: '/admin/inquiries', icon: EnvelopeIcon },
+  { name: 'Enquiries', href: '/admin/enquiries', icon: EnvelopeIcon },
   { name: 'Blog', href: '/admin/blog', icon: DocumentTextIcon },
   { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon },
   { name: 'Pages', href: '/admin/pages', icon: DocumentTextIcon },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
-  { name: 'Invoices', href: '/admin/invoices', icon: CreditCardIcon },
+  // { name: 'Invoices', href: '/admin/invoices', icon: CreditCardIcon },
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 

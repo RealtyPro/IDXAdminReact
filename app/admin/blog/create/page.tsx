@@ -11,16 +11,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "react-quill-new/dist/quill.snow.css";
 import { useMutation } from "@tanstack/react-query";
 import { postNewBlog } from "@/services/blog/BlogServices";
-interface BlogResponse {
-  title: string;
-  subtitle: string;
-  author: string;
-  category: string;
-  publishDate: Date | string; // Use string if data comes as ISO string from backend
-  image: string | null;
-  content: string;
-  isFeatured: boolean;
-}
+import { postImages } from "@/services/shared/SharedService";
 
 export default function BlogCreatePage() {
   const [title, setTitle] = useState("");
@@ -29,24 +20,42 @@ export default function BlogCreatePage() {
   const [category, setCategory] = useState("");
   const [publishDate, setPublishDate] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [updatedImage, setUpdatedImage] = useState({});
   const [content, setContent] = useState("");
   const [isFeatured, setIsFeatured] = useState(false); // State for "Is Featured"
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const postBlogMutation = useMutation({
-    mutationFn: (newBlog:BlogResponse) => postNewBlog(newBlog),
+    mutationFn: (newBlog: any) => postNewBlog(newBlog),
 
     onSuccess: (data) => {
       console.log("blog posted successfully:", data);
-      window.location.href="/admin/blog";
+      // window.location.href = "/admin/blog";
 
     },
     onError: (error) => {
-      console.error("Error  while loggin:", error);
+      console.error("Error  while creating new blog:", error);
+    },
+  });
+  const postImageMutation = useMutation({
+    mutationFn: (newPage: any) => postImages(newPage),
+
+    onSuccess: (data) => {
+      console.log("Image posted successfully:", data);
+      setUpdatedImage(data);
+    },
+    onError: (error) => {
+      console.error("Error  while creating new Page:", error);
     },
   });
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const filesArray = Array.from(e.target.files);
+      const formData = new FormData();
+      filesArray.forEach((file, index) => {
+        formData.append('images', file);
+      });
+      postImageMutation.mutate(formData);
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImage(ev.target?.result as string);
@@ -65,14 +74,14 @@ export default function BlogCreatePage() {
       author,
       category,
       publishDate,
-      image,
       content,
       isFeatured,
-      status:true
+      status: true,
+      image: updatedImage,
+
     };
     postBlogMutation.mutate(formData);
     // Example: Log the form data (replace this with an API call)
-    console.log("Form Data Submitted:", formData);
 
     // Reset form fields (optional)
     setTitle("");

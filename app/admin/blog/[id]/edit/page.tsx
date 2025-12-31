@@ -9,46 +9,42 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockBlogs } from '@/lib/mockData';
+import 'react-quill-new/dist/quill.snow.css';
+import { useSingleBlog, useUpdateBlog } from '@/services/blog/BlogQueris';
+import { Blog } from '@/app/types/Blog';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
-import 'react-quill-new/dist/quill.snow.css';
-import { useSingleBlog } from '@/services/blog/BlogQueris';
-
 export default function BlogEditPage() {
 
-  const [blog, setBlog] = useState<typeof mockBlogs[0] | undefined>(undefined);
-  const [image, setImage] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [date, setDate] = useState('');
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [status, setStatus] = useState('Draft');
-  const [content, setContent] = useState<string>("");
+  const [blog, setBlog] = useState<Blog | undefined>(undefined);
+  const [image, setImage] = useState<string | null>(null);  
   const [loading, setLoading] = useState(true);
   const params = useParams();
   // const { data: singleBlog, isLoading, error} = useSingleBlog({ id: params.id as string });
   // const fileInputRef = useRef<HTMLInputElement>(null);
-const invokeSingleBlogFetch=()=>{
-  const { data: singleBlog, isLoading, error} = useSingleBlog({ id: params.id as string });
-
-}
+  const { data: singleBlog, isLoading, error} = useSingleBlog(params.id as string);
+  const { mutateAsync: updateBlog } = useUpdateBlog(params.id as string);
+  //  const postBlogMutation = useMutation({
+  //     mutationFn: (newBlog: any) => postNewBlog(newBlog),
+  
+  //     onSuccess: (data) => {
+  //       console.log("blog posted successfully:", data);
+  //       window.location.href="/admin/blog";
+  
+  //     },
+  //     onError: (error) => {
+  //       console.error("Error  while creating new blog:", error);
+  //     },
+  //   });
   useEffect(() => {
-    invokeSingleBlogFetch();
-    const found = mockBlogs.find((b) => b.id === params.id);
-    setBlog(found);
+    
+    const found = singleBlog?.data;
+   
     if (found) {
-      setTitle(found.title);
-      setSubtitle(found.subtitle || '');
-      setCategory(found.category || '');
-      setDate(found.date || '');
-      setIsFeatured(!!found.isFeatured);
-      setStatus(found.status || 'Draft');
-      setContent(found.content);
+       setBlog(found);
     }
-    setLoading(false);
-  }, [params.id]);
+    setLoading(isLoading);
+  }, [singleBlog?.data]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -92,10 +88,30 @@ const invokeSingleBlogFetch=()=>{
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would typically make an API call to update the blog
-    
-    alert(`Blog updated: ${title}`);
-  };
+    // const updated =updateBlog(blog);
 
+    // console.log("Blog updated successfully:", updated);
+    // alert(`Blog updated: ${blog.title}`);
+    handleSave(blog);
+  };
+  const handleSave = async (newValues:any) => {
+  try {
+    await updateBlog(newValues, {
+      onSuccess: (data) => {
+        // e.g., show a toast or navigate somewhere
+
+        window.location.href = `/admin/blog`;
+      },
+      onError: (error) => {
+        console.error('Failed to update the blog!', error);
+        // e.g., show an error toast
+      }
+    });
+  } catch (error) {
+    // fallback if onError wasn't provided
+    console.error('Error occurred!', error);
+  }
+  }
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
       <Card>
@@ -109,35 +125,50 @@ const invokeSingleBlogFetch=()=>{
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required />
+              <Input id="title" value={blog.title} onChange={e => setBlog({...blog,title:e.target.value})} required />
             </div>
             <div>
               <Label htmlFor="subtitle">Subtitle</Label>
-              <Input id="subtitle" value={subtitle} onChange={e => setSubtitle(e.target.value)} />
+              <Input id="subtitle" value={blog.subtitle} onChange={e => setBlog({...blog,subtitle:e.target.value})} />
             </div>
-            <div>
+            {/* <div>
               <Label htmlFor="category">Category</Label>
-              <Input id="category" value={category} onChange={e => setCategory(e.target.value)} />
-            </div>
+              <Input id="category" value={blog.category} onChange={e => setBlog({...blog,category:e.target.value})} />
+            </div> */}
+              <div>
+                          <Label htmlFor="category">Category</Label>
+                          <select
+                            id="category"
+                            value={blog.category}
+                            onChange={(e) => setBlog({...blog,category:e.target.value})}
+                            className="block w-full text-sm border-gray-300 rounded-md"
+                            required
+                          >
+                            <option value="">Select a category</option>
+                            <option value="blog">Blog</option>
+                            <option value="news">News</option>
+                            <option value="articles">Articles</option>
+                          </select>
+                        </div>
             <div>
               <Label htmlFor="date">Date</Label>
-              <Input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+              <Input id="date" type="date" value={blog.publishDate} onChange={e => setBlog({...blog,publishDate:e.target.value})} />
             </div>
             <div className="flex items-center gap-2">
-              <input id="isFeatured" type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} />
+              <input id="isFeatured" type="checkbox" checked={blog.is_featured} onChange={e => setBlog({...blog,is_featured:e.target.checked})} />
               <Label htmlFor="isFeatured">Featured</Label>
             </div>
             <div>
               <Label htmlFor="status">Status</Label>
-              <select id="status" value={status} onChange={e => setStatus(e.target.value)} className="px-4 py-2 rounded-lg border border-input bg-background text-sm">
-                <option value="Draft">Draft</option>
-                <option value="Published">Published</option>
-                <option value="Archived">Archived</option>
+              <select id="status" value={blog.status} onChange={e => setBlog({...blog,status:e.target.value})} className="px-4 py-2 rounded-lg border border-input bg-background text-sm">
+                {/* <option value=""></option> */}
+                <option value="published">Published</option>
+                <option value="unpublished">Unpublished</option>
               </select>
             </div>
             <div>
               <Label htmlFor="content">Content</Label>
-              <ReactQuill theme="snow" value={content} onChange={setContent} className="bg-white" />
+              <ReactQuill theme="snow" value={blog.content} onChange={e => setBlog({...blog,content:e})} className="bg-white" />
             </div>
             <Button type="submit">Update Blog</Button>
           </form>
